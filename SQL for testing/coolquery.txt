@@ -1,0 +1,17 @@
+INSERT INTO necessity_evaluation (RequestID, Resultado, BCI_Original, Email_Requerente, Observacoes)
+SELECT 
+    RequestID,
+    CASE 
+        WHEN Estado = 'Autorizado' THEN 'Sim'
+        WHEN Estado = 'Em Andamento' THEN 'Pending'
+        WHEN Estado = 'Recusado' THEN 'Não'
+    END AS Resultado,
+    CASE 
+        WHEN Tipo_BCII = 'Original' THEN 'Não necessita'
+        WHEN Tipo_BCII = 'Copy' THEN IF(RAND() > 0.5, 'Sim', 'Não necessita') 
+    END AS BCI_Original,
+    'Não Necessita' AS Email_Requerente,
+    'Não Necessita' AS Observacoes
+FROM requests
+WHERE RequestID BETWEEN 205 AND 315
+ORDER BY RequestID;

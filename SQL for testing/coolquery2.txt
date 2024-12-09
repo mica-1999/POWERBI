@@ -1,0 +1,53 @@
+DELIMITER //
+
+CREATE PROCEDURE AssignFuncionariosToRequests()
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE req_id INT;
+    DECLARE quant INT;
+    DECLARE dep_id INT;
+    
+    DECLARE request_cursor CURSOR FOR 
+        SELECT RequestID, Quantidade 
+        FROM requests 
+        WHERE RequestID BETWEEN 205 AND 315;
+        
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN request_cursor;
+    
+    read_loop: LOOP
+        FETCH request_cursor INTO req_id, quant;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        
+        -- Skip requests with Quantidade >= 10
+        IF quant >= 10 THEN
+            ITERATE read_loop;
+        END IF;
+        
+        -- Find a department with enough employees
+        SELECT ID_Direcao INTO dep_id 
+        FROM (
+            SELECT ID_Direcao 
+            FROM funcionarios 
+            GROUP BY ID_Direcao 
+            HAVING COUNT(ID_Funcionario) >= quant 
+            ORDER BY RAND() 
+            LIMIT 1
+        ) AS dep;
+        
+        -- Insert the required number of funcionarios from the selected department
+        INSERT INTO request_funcionarios (RequestID, FuncionarioID)
+        SELECT req_id, ID_Funcionario 
+        FROM funcionarios 
+        WHERE ID_Direcao = dep_id 
+        ORDER BY RAND() 
+        LIMIT quant;
+    END LOOP;
+    
+    CLOSE request_cursor;
+END //
+
+DELIMITER ;
